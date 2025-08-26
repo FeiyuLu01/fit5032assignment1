@@ -1,47 +1,52 @@
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
-import TheWelcome from './components/TheWelcome.vue'
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
+  <div>
+    <!-- 顶部导航栏 -->
+    <nav class="navbar navbar-expand-lg bg-light border-bottom">
+      <div class="container">
+        <RouterLink to="/" class="navbar-brand fw-bold">🏀 Basketball Hub</RouterLink>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#nav"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div id="nav" class="collapse navbar-collapse">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <RouterLink to="/" class="nav-link">Home</RouterLink>
+            </li>
+            <li class="nav-item">
+              <RouterLink to="/courts" class="nav-link">Court Finder</RouterLink>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
 
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-    </div>
-  </header>
-
-  <main>
-    <TheWelcome />
-  </main>
+    <!-- 页面内容 -->
+    <main class="container py-4 fade-in">
+      <RouterView />
+    </main>
+  </div>
 </template>
 
 <style scoped>
-header {
-  line-height: 1.5;
+.fade-in {
+  animation: fadein 0.5s ease-out;
 }
-
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
+@keyframes fadein {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
   }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 </style>
