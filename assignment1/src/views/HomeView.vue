@@ -2,14 +2,12 @@
   <section>
     <h2 class="mb-3">Upcoming Programs</h2>
 
-    <!-- 动态项目卡片 -->
     <div class="row g-3">
       <div v-for="p in programs" :key="p.id" class="col-12 col-md-6 col-xl-4">
         <ProgramCard :program="p" @apply="openApply(p)" />
       </div>
     </div>
 
-    <!-- 报名表单 -->
     <div v-if="selected" class="mt-5">
       <h4 class="mb-3">Apply: {{ selected.title }}</h4>
       <form class="row g-3" @submit.prevent="submitForm">
@@ -35,7 +33,6 @@
         <div class="col-md-6">
           <label class="form-label">Preferred Session Date</label>
           <input class="form-control" type="date" v-model="form.prefDate" required />
-          <!-- 提示当前选择的日期（DD/MM/YYYY） -->
           <div class="form-text" v-if="form.prefDate">
             Selected: {{ formatDateISOToDMY(form.prefDate) }}
           </div>
@@ -56,7 +53,7 @@
           <input class="form-control" :required="form.notifyParent"
                  placeholder="e.g. 04xx xxx xxx"
                  v-model.trim="form.emergencyPhone"
-                 pattern="^0[2-9]\\d{8}$"
+                 pattern="^0[2-9]\d{8}$"
                  @blur="validateEmergency"/>
           <div v-if="errors.emergencyPhone" class="text-danger small">{{ errors.emergencyPhone }}</div>
           <div class="form-text">Required only if notifying parent/guardian.</div>
@@ -69,7 +66,6 @@
       </form>
     </div>
 
-    <!-- 历史报名（持久化） -->
     <div class="mt-5">
       <h4 class="mb-3">Recent Applications</h4>
       <div v-if="registrations.length===0" class="text-muted">No submissions yet.</div>
@@ -77,18 +73,17 @@
         <table class="table align-middle">
           <thead>
             <tr>
-              <th>Program</th><th>Name</th><th>Email</th><th>Age</th><th>Date</th><th>Submitted</th>
+              <th>Program</th><th>Name</th><th>Email</th><th>Phone</th><th>Age</th><th>Date</th><th>Submitted</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="r in registrations" :key="r.ts">
               <td>{{ r.program.title }}</td>
               <td>{{ r.form.name }}</td>
-              <td>{{ r.form.email }}</td>
+              <td>{{ maskEmail(r.form.email) }}</td>
+              <td>{{ maskPhone(r.form.emergencyPhone) }}</td>
               <td>{{ r.form.age }}</td>
-              <!-- 统一为 DD/MM/YYYY -->
               <td>{{ formatDateISOToDMY(r.form.prefDate) }}</td>
-              <!-- 提交时间：DD/MM/YYYY HH:MM:SS -->
               <td>{{ formatDateTimeDMY(r.ts) }}</td>
             </tr>
           </tbody>
@@ -102,13 +97,10 @@
 import { onMounted, reactive, ref } from 'vue'
 import { fetchPrograms } from '../services/data.js'
 import ProgramCard from '../components/ProgramCard.vue'
-import { formatDateISOToDMY, formatDateTimeDMY } from '../utils/format.js'
+import { formatDateISOToDMY, formatDateTimeDMY, maskEmail, maskPhone } from '../utils/format.js'
 
-// 动态项目
 const programs = ref([])
-// 报名选择
 const selected = ref(null)
-// 历史报名（直接从 localStorage 读取展示）
 const registrations = ref([])
 
 onMounted(async () => {
@@ -119,7 +111,6 @@ onMounted(async () => {
 function openApply(p){ selected.value = p }
 function cancelApply(){ selected.value = null; resetForm() }
 
-// 表单与校验
 const form = reactive({
   name:'', email:'', age: null, prefDate:'', notes:'',
   notifyParent:false, emergencyPhone:''
