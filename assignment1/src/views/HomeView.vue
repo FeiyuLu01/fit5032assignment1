@@ -12,26 +12,26 @@
       <h4 class="mb-3">Apply: {{ selected.title }}</h4>
       <form class="row g-3" @submit.prevent="submitForm">
         <div class="col-md-6">
-          <label class="form-label">Full Name</label>
+          <label class="form-label">Full Name (required)</label>
           <input class="form-control" v-model.trim="form.name"
                  required minlength="2" @blur="validateName"/>
           <div v-if="errors.name" class="text-danger small">{{ errors.name }}</div>
         </div>
 
         <div class="col-md-6">
-          <label class="form-label">Email</label>
+          <label class="form-label">Email (required)</label>
           <input class="form-control" type="email" v-model.trim="form.email"
                  required @blur="validateEmail"/>
           <div v-if="errors.email" class="text-danger small">{{ errors.email }}</div>
         </div>
 
         <div class="col-md-6">
-          <label class="form-label">Player Age</label>
+          <label class="form-label">Player Age (required)</label>
           <input class="form-control" type="number" min="6" max="25" v-model.number="form.age" required />
         </div>
 
         <div class="col-md-6">
-          <label class="form-label">Preferred Session Date</label>
+          <label class="form-label">Preferred Session Date (required)</label>
           <input class="form-control" type="date" v-model="form.prefDate" required />
           <div class="form-text" v-if="form.prefDate">
             Selected: {{ formatDateISOToDMY(form.prefDate) }}
