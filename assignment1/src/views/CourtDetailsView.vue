@@ -16,7 +16,7 @@
               <p class="mb-1"><b>Cost:</b> {{ court.cost }}</p>
               <p class="mb-1"><b>Hours:</b> {{ court.hours }}</p>
               <p class="mb-1"><b>Surface:</b> {{ court.surfaces.join(', ') }}</p>
-              <p class="mb-0"><b>Coordinates:</b> {{ court.lat }}, {{ court.lng }}</p>
+              <!-- <p class="mb-0"><b>Coordinates:</b> {{ court.lat }}, {{ court.lng }}</p> -->
             </div>
           </div>
         </div>
