@@ -1,4 +1,3 @@
-<!-- src/App.vue -->
 <template>
   <div>
     <!-- Bootstrap Navbar -->
@@ -16,7 +15,7 @@
         </button>
 
         <div id="mainNav" class="collapse navbar-collapse">
-          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0" v-if="auth.user">
             <li class="nav-item">
               <router-link class="nav-link" to="/" exact>Home</router-link>
             </li>
@@ -68,11 +67,18 @@
 import { signOut } from 'firebase/auth'
 import { auth as fbAuth } from '@/services/firebase'
 import { useAuthState } from '@/state/authState'
+import { useRouter } from 'vue-router'
 
 const { state: auth } = useAuthState()
+const router = useRouter()
 
 async function signout() {
-  await signOut(fbAuth)
+  try {
+    await signOut(fbAuth)
+  } finally {
+    // 立刻带到登录页（满足“Sign out 后自动进入登录页面”）
+    router.push('/login')
+  }
 }
 </script>
 

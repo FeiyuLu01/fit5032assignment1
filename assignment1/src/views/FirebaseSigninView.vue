@@ -70,11 +70,9 @@
     infoMsg.value = ''
     loading.value = true
     try {
-      // 1) 登录 Firebase Auth
       const cred = await signInWithEmailAndPassword(auth, email.value, password.value)
       const user = cred.user
   
-      // 2) 读取 Firestore 的 role
       const ref = doc(db, 'users', user.uid)
       const snap = await getDoc(ref)
       if (!snap.exists()) {
@@ -83,12 +81,10 @@
       const data = snap.data()
       const actualRole = data.role || 'user'
   
-      // 3) 校验用户选择的角色与 Firestore 中的角色一致
       if (actualRole !== selectedRole.value) {
         throw new Error(`Role mismatch: this account is '${actualRole}', not '${selectedRole.value}'.`)
       }
   
-      // 4) 登录成功
       infoMsg.value = `Welcome ${user.email} as ${actualRole}`
       router.push('/')
     } catch (err) {
