@@ -28,16 +28,7 @@
           />
         </div>
   
-        <div class="mb-3">
-          <label class="form-label">Role (demo purpose)</label>
-          <select class="form-select" v-model="role">
-            <option value="user">user</option>
-            <option value="admin">admin</option>
-          </select>
-          <div class="form-text text-warning">
-            For demo only: picking <code>admin</code> here is just to show role-based pages.
-          </div>
-        </div>
+        <!-- 角色选择已移除：所有新用户固定写入 role: 'user' -->
   
         <button class="btn btn-primary w-100" :disabled="loading">
           <span class="spinner-border spinner-border-sm me-2" v-if="loading"></span>
@@ -62,14 +53,10 @@
   import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
   import { auth, db } from '@/services/firebase'
   
-  // ⛳️ 重要：注册成功后，立刻写入 Firestore 的 users/{uid} 文档。
-  // 这样 Firestore 控制台就能看到数据了（前提是规则允许：开发阶段建议 request.auth != null）
-  
   const router = useRouter()
   
   const email = ref('')
   const password = ref('')
-  const role = ref('user')
   const loading = ref(false)
   const errorMsg = ref('')
   const okMsg = ref('')
@@ -92,17 +79,17 @@
       const cred = await createUserWithEmailAndPassword(auth, email.value, password.value)
       const user = cred.user
   
-      // 2) 可选：给用户设置一个 displayName（这里用邮箱前缀）
+      // 2) 可选：设置 displayName（这里用邮箱前缀）
       const displayName = email.value.split('@')[0]
       try {
         await updateProfile(user, { displayName })
       } catch (_) {}
   
-      // 3) **关键**：写入 Firestore users/{uid} 文档（演示允许从前端写入）
+      // 3) 固定写入 Firestore：role 永远是 'user'
       await setDoc(doc(db, 'users', user.uid), {
         email: user.email,
         displayName,
-        role: role.value || 'user',
+        role: 'user',
         createdAt: serverTimestamp()
       }, { merge: true })
   
