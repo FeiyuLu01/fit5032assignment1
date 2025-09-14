@@ -6,28 +6,36 @@ import CourtDetailsView from '../views/CourtDetailsView.vue'
 
 import FirebaseSigninView from '../views/FirebaseSigninView.vue'
 import FirebaseRegisterView from '../views/FirebaseRegisterView.vue'
-import AdminView from '../views/AdminView.vue'
+import AdminView from '../views/AdminDashboard.vue'
 
-import { getAuth, onAuthStateChanged } from "firebase/auth"
+import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { useAuthState } from '@/state/authState'
 
 const routes = [
+  // user front
   { path: '/', name: 'home', component: HomeView, meta: { requiresAuth: true } },
   { path: '/courts', name: 'courts', component: CourtFinderView, meta: { requiresAuth: true } },
   { path: '/courts/:id', name: 'courtDetails', component: CourtDetailsView, props: true, meta: { requiresAuth: true } },
 
+  // auth
   { path: '/login', name: 'login', component: FirebaseSigninView },
   { path: '/register', name: 'register', component: FirebaseRegisterView },
 
-  { path: '/admin', name: 'admin', component: AdminView, meta: { requiresAuth: true, roles: ['admin'] } }
+  // admin (single component with tabs)
+  { path: '/admin',               name: 'admin',              component: AdminView, meta: { requiresAuth: true, roles: ['admin'], tab: 'courts' } },
+  { path: '/admin/create',        name: 'adminCreateCourt',   component: AdminView, meta: { requiresAuth: true, roles: ['admin'], tab: 'create' } },
+  { path: '/admin/announcements', name: 'adminAnnouncements', component: AdminView, meta: { requiresAuth: true, roles: ['admin'], tab: 'announcements' } },
+
+  // optional 404 fallback
+  // { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
+  routes,
 })
 
-// 用于等待 Firebase 初始化完成再放行路由
+// wait until Firebase Auth state resolved
 let authResolved = false
 function waitForAuth() {
   return new Promise((resolve) => {
@@ -47,21 +55,28 @@ function waitForAuth() {
 router.beforeEach(async (to, from, next) => {
   await waitForAuth()
   const { state } = useAuthState()
+  const isAuthed = !!state.user
+  const isAdmin = state.role === 'admin'
 
-  // 如果未登录用户访问需要认证的页面 → 去登录
-  if (to.meta.requiresAuth && !state.user) {
+  // must login for protected pages
+  if (to.meta.requiresAuth && !isAuthed) {
     return next({ name: 'login', query: { redirect: to.fullPath } })
   }
 
-  // 如果已登录用户访问登录页 → 跳过，直接回主页
-  if (to.name === 'login' && state.user) {
-    return next({ name: 'home' })
+  // if already logged in, prevent visiting login/register
+  if ((to.name === 'login' || to.name === 'register') && isAuthed) {
+    return next({ name: isAdmin ? 'admin' : 'home' })
   }
 
-  // 检查角色
+  // admin visiting user front pages -> redirect to dashboard
+  if (isAdmin && (to.name === 'home' || to.name === 'courts' || to.name === 'courtDetails')) {
+    return next({ name: 'admin' })
+  }
+
+  // check role requirements
   const roles = to.meta?.roles
   if (Array.isArray(roles) && roles.length > 0) {
-    if (!state.role || !roles.includes(state.role)) {
+    if (!isAdmin && roles.includes('admin')) {
       return next({ name: 'home' })
     }
   }
