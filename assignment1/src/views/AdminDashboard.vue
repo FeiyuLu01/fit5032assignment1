@@ -268,6 +268,7 @@
 </template>
 
 <script setup>
+import { sanitizeHTML } from '@/utils/sanitize'
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -400,13 +401,43 @@ async function submitAnnouncement() {
   annErr.value = ''
   annLoading.value = true
   try {
-    await createAnnouncement({ title: annForm.title, content: annForm.content })
+    const cleanTitle = sanitizeHTML(annForm.title || '', {
+      ALLOWED_TAGS: [],
+      ALLOWED_ATTR: []
+    }).trim().slice(0, 120)
+
+    const cleanContent = sanitizeHTML(annForm.content || '', {
+      ALLOWED_TAGS: ['p', 'br', 'ul', 'ol', 'li', 'b', 'strong', 'i', 'em', 'u', 'a'],
+      ALLOWED_ATTR: {
+        'a': ['href', 'title', 'target']
+      },
+    }).trim()
+
+    if (!cleanTitle) {
+      annErr.value = 'Title is required.'
+      annLoading.value = false
+      return
+    }
+    if (!cleanContent) {
+      annErr.value = 'Content is required.'
+      annLoading.value = false
+      return
+    }
+
+    await createAnnouncement({
+      title: cleanTitle,
+      content: cleanContent,      
+      bodyHtml: cleanContent   
+    })
+
     resetAnnouncement()
     await loadAnnouncements()
     await loadKpi()
   } catch (e) {
     annErr.value = e?.message || 'Publish failed.'
-  } finally { annLoading.value = false }
+  } finally {
+    annLoading.value = false
+  }
 }
 
 // Initial load

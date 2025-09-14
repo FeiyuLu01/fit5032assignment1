@@ -1,23 +1,32 @@
+<!-- src/views/HomeView.vue -->
 <template>
   <section class="home container py-4">
-    <!-- Announcements (visible to all signed-in users) -->
+    <!-- Announcements -->
     <div class="mb-4">
       <div class="section-head mb-3">
         <h2 class="h4 fw-bold text-primary">Announcements</h2>
         <p class="text-muted">Stay up to date with club news</p>
       </div>
 
-      <!-- card list -->
       <div v-if="announcements.length">
-        <div class="card card-soft mb-3" v-for="a in announcements" :key="a.id">
+        <div
+          class="card card-soft mb-3"
+          v-for="(a, idx) in announcements"
+          :key="a.id"
+        >
           <div class="card-body">
             <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
               <div class="flex-fill">
                 <h6 class="mb-1 fw-semibold">{{ a.title }}</h6>
                 <small class="text-muted">
                   {{ formatTime(a.createdAt) }}
-                  <span v-if="isNew(a.createdAt)" class="badge ms-2 bg-primary-subtle text-primary fw-semibold">NEW</span>
+                  <!-- show NEW only on the very latest item -->
+                  <span
+                    v-if="idx === 0 && isRecent(a.createdAt)"
+                    class="badge ms-2 bg-primary-subtle text-primary fw-semibold"
+                  >NEW</span>
                 </small>
+
                 <div class="mt-2">
                   <SafeHtmlBlock v-if="a.bodyHtml" :html="a.bodyHtml" />
                   <p v-else class="mb-0">{{ a.body }}</p>
@@ -28,13 +37,12 @@
         </div>
       </div>
 
-      <!-- empty -->
       <div v-else class="card card-soft">
         <div class="card-body text-muted">No announcements yet.</div>
       </div>
     </div>
 
-    <!-- Upcoming Programs (unchanged business logic) -->
+    <!-- Upcoming Programs -->
     <div class="section-head mb-3">
       <h2 class="h4 fw-bold text-primary">Upcoming Programs</h2>
       <p class="text-muted">Join our latest training sessions and activities</p>
@@ -46,21 +54,22 @@
       </div>
     </div>
 
-    <!-- Application form (unchanged) -->
+    <!-- Application form -->
     <div v-if="selected" class="mt-5">
       <div class="card shadow-sm border-0 rounded-3">
         <div class="card-body">
           <h4 class="mb-3 text-primary">Apply: {{ selected.title }}</h4>
+
           <form class="row g-3" @submit.prevent="submitForm">
             <div class="col-md-6">
               <label class="form-label fw-semibold">Full Name (required)</label>
-              <input class="form-control" v-model.trim="form.name" required minlength="2" @blur="validateName"/>
+              <input class="form-control" v-model.trim="form.name" required minlength="2" @blur="validateName" />
               <div v-if="errors.name" class="text-danger small">{{ errors.name }}</div>
             </div>
 
             <div class="col-md-6">
               <label class="form-label fw-semibold">Email (required)</label>
-              <input class="form-control" type="email" v-model.trim="form.email" required @blur="validateEmail"/>
+              <input class="form-control" type="email" v-model.trim="form.email" required @blur="validateEmail" />
               <div v-if="errors.email" class="text-danger small">{{ errors.email }}</div>
             </div>
 
@@ -81,15 +90,20 @@
             </div>
 
             <div class="col-12 form-check">
-              <input id="notify" class="form-check-input" type="checkbox" v-model="form.notifyParent">
+              <input id="notify" class="form-check-input" type="checkbox" v-model="form.notifyParent" />
               <label for="notify" class="form-check-label">Also notify parent/guardian</label>
             </div>
 
             <div class="col-md-6">
               <label class="form-label fw-semibold">Emergency Contact Phone</label>
-              <input class="form-control" :required="form.notifyParent"
-                     placeholder="e.g. 04xx xxx xxx" v-model.trim="form.emergencyPhone"
-                     pattern="^0[2-9]\\d{8}$" @blur="validateEmergency"/>
+              <input
+                class="form-control"
+                :required="form.notifyParent"
+                placeholder="e.g. 04xx xxx xxx"
+                v-model.trim="form.emergencyPhone"
+                pattern="^0[2-9]\\d{8}$"
+                @blur="validateEmergency"
+              />
               <div v-if="errors.emergencyPhone" class="text-danger small">{{ errors.emergencyPhone }}</div>
               <div class="form-text">Required only if notifying parent/guardian.</div>
             </div>
@@ -103,13 +117,13 @@
       </div>
     </div>
 
-    <!-- Recent applications (unchanged) -->
+    <!-- Recent applications -->
     <div class="mt-5">
       <div class="section-head mb-3">
         <h4 class="fw-bold text-primary">Recent Applications</h4>
       </div>
 
-      <div v-if="registrations.length===0" class="text-muted">No submissions yet.</div>
+      <div v-if="registrations.length === 0" class="text-muted">No submissions yet.</div>
       <div v-else class="card shadow-sm border-0 rounded-3">
         <div class="table-responsive">
           <table class="table align-middle mb-0">
@@ -137,38 +151,37 @@
 </template>
 
 <script setup>
-// UI only; business logic for Apply kept intact
+/* Data & components */
 import { onMounted, onBeforeUnmount, reactive, ref } from 'vue'
-import { fetchPrograms } from '../services/data.js'
-import ProgramCard from '../components/ProgramCard.vue'
-import { formatDateISOToDMY, formatDateTimeDMY, maskEmail, maskPhone } from '../utils/format.js'
-
-// Announcements service (read-only for users)
+import ProgramCard from '@/components/ProgramCard.vue'
 import SafeHtmlBlock from '@/components/SafeHtmlBlock.vue'
+import { fetchPrograms } from '@/services/data.js'
 import { listenAnnouncements, fetchAnnouncementsOnce } from '@/services/announcements.js'
+import { formatDateISOToDMY, formatDateTimeDMY, maskEmail, maskPhone } from '@/utils/format.js'
 
+/* Announcements state */
 const announcements = ref([])
 let unlisten = null
 
+/* Programs / applications state */
 const programs = ref([])
 const selected = ref(null)
 const registrations = ref([])
 
+/* Mount: load programs & announcements */
 onMounted(async () => {
-  // Programs & registrations (your original logic)
   programs.value = await fetchPrograms()
   registrations.value = JSON.parse(localStorage.getItem('registrations') || '[]')
 
-  // Start announcements realtime listener for all users
   try {
-    unlisten = listenAnnouncements((list) => {
+    unlisten = listenAnnouncements(list => {
       announcements.value = list || []
     })
   } catch (e) {
-    // Fallback: one-time fetch
+    // fallback once
     try {
       announcements.value = await fetchAnnouncementsOnce()
-    } catch (_) {
+    } catch {
       announcements.value = []
     }
   }
@@ -176,42 +189,42 @@ onMounted(async () => {
 
 onBeforeUnmount(() => { if (typeof unlisten === 'function') unlisten() })
 
-// ==== your original Apply flow (unchanged) ====
-function openApply(p){ selected.value = p }
-function cancelApply(){ selected.value = null; resetForm() }
+/* Application logic (kept as original) */
+function openApply(p) { selected.value = p }
+function cancelApply() { selected.value = null; resetForm() }
 
 const form = reactive({
-  name:'', email:'', age: null, prefDate:'', notes:'',
-  notifyParent:false, emergencyPhone:''
+  name: '', email: '', age: null, prefDate: '', notes: '',
+  notifyParent: false, emergencyPhone: ''
 })
-const errors = reactive({ name:'', email:'', emergencyPhone:'' })
+const errors = reactive({ name: '', email: '', emergencyPhone: '' })
 
-function validateName(){
-  errors.name = form.name.length>=2 ? '' : 'Name must be at least 2 characters.'
+function validateName () {
+  errors.name = form.name.length >= 2 ? '' : 'Name must be at least 2 characters.'
 }
-function validateEmail(){
+function validateEmail () {
   const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
   errors.email = ok ? '' : 'Please enter a valid email.'
 }
-function validateEmergency(){
-  if(form.notifyParent){
+function validateEmergency () {
+  if (form.notifyParent) {
     const ok = /^0[2-9]\d{8}$/.test(form.emergencyPhone)
     errors.emergencyPhone = ok ? '' : 'Phone must be AU format like 04xxxxxxxx.'
   } else {
     errors.emergencyPhone = ''
   }
 }
-function allValid(){
+function allValid () {
   validateName(); validateEmail(); validateEmergency()
   return !errors.name && !errors.email && !errors.emergencyPhone
 }
-function resetForm(){
+function resetForm () {
   form.name=''; form.email=''; form.age=null; form.prefDate=''; form.notes=''
   form.notifyParent=false; form.emergencyPhone=''
   errors.name=errors.email=errors.emergencyPhone=''
 }
-function submitForm(){
-  if(!allValid()) return
+function submitForm () {
+  if (!allValid()) return
   const reg = { program: selected.value, form: { ...form }, ts: Date.now() }
   const list = JSON.parse(localStorage.getItem('registrations') || '[]')
   list.unshift(reg)
@@ -221,15 +234,17 @@ function submitForm(){
   alert('Application submitted!')
 }
 
-// ==== helpers for announcements ====
-function formatTime(ts) {
+/* Helpers */
+function formatTime (ts) {
   try {
     if (!ts) return ''
     const dt = ts?.toDate ? ts.toDate() : new Date(ts)
     return dt.toLocaleString()
   } catch { return '' }
 }
-function isNew(ts) {
+
+/* Only the latest one should get NEW; also require it to be recent (48h) */
+function isRecent (ts) {
   try {
     const dt = ts?.toDate ? ts.toDate() : new Date(ts)
     return Date.now() - dt.getTime() < 1000 * 60 * 60 * 48
@@ -237,7 +252,7 @@ function isNew(ts) {
 }
 </script>
 
-<style>
-/* UI-only styles */
+<style scoped>
 .card-soft{ border:1px solid rgba(0,0,0,.06); border-radius:12px }
+.section-head p{ margin: .25rem 0 0 }
 </style>
