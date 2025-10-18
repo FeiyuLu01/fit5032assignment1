@@ -31,3 +31,6 @@ coverage
 .env
 .firebase
 *firebase-adminsdk*.json
+
+
+.env*
