@@ -33,7 +33,7 @@
       </div>
     </div>
 
-    <!-- Map with advanced features -->
+    <!-- Map with advanced features (BR E.2 Geo location: search + routing) -->
     <div class="card shadow-sm border-0 mb-4">
       <div class="card-body">
         <div class="row g-3 align-items-start">

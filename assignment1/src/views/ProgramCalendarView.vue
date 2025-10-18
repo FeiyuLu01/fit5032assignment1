@@ -1,3 +1,4 @@
+<!-- Appointment Booking via Calendar (BR F.1) -->
 <template>
   <section class="container py-4 calendar-view">
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
@@ -148,7 +149,8 @@ const monthLabel = computed(() => {
 })
 
 // Build the grid cells for the current month, mixing program sessions and
-// personal bookings so the user can see both availability and their own schedule.
+// personal bookings so the user can see both availability and their own schedule
+// to satisfy Appointment Booking with calendar constraints.
 const calendarCells = computed(() => {
   const firstDay = new Date(currentYear.value, currentMonth.value, 1)
   const startIdx = firstDay.getDay()

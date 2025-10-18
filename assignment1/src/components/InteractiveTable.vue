@@ -1,3 +1,4 @@
+<!-- Interactive Table component supporting sort, filter, pagination (BR D.3) -->
 <template>
   <div class="interactive-table">
     <div v-if="enableGlobalSearch" class="table-tool mb-3">

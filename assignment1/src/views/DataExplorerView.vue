@@ -10,6 +10,7 @@
     <div class="card shadow-sm border-0 rounded-3 mb-4">
       <div class="card-header d-flex justify-content-between align-items-center fw-semibold">
         <span>Programs Overview</span>
+        <!-- Export button meets BR E.4 data export requirement -->
         <button
           type="button"
           class="btn btn-sm btn-outline-primary"
@@ -21,6 +22,7 @@
       </div>
       <div class="card-body">
         <div v-if="programsLoading" class="text-center text-muted py-4">Loading programs…</div>
+        <!-- Interactive table satisfies BR D.3 with sorting/filtering/pagination -->
         <InteractiveTable
           v-else
           :columns="programColumns"
@@ -34,6 +36,7 @@
     <div class="card shadow-sm border-0 rounded-3">
       <div class="card-header d-flex justify-content-between align-items-center fw-semibold">
         <span>Courts Inventory</span>
+        <!-- Export button meets BR E.4 for courts dataset -->
         <button
           type="button"
           class="btn btn-sm btn-outline-primary"

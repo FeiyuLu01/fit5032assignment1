@@ -1,3 +1,4 @@
+// Cloud Functions (BR E.1) implementing email, booking, moderation logic.
 import { onRequest, onCall, HttpsError } from 'firebase-functions/v2/https'
 import { defineSecret } from 'firebase-functions/params'
 import sgMail from '@sendgrid/mail'
@@ -44,7 +45,7 @@ async function parseMultipart(req) {
 }
 
 export const sendEmail = onRequest({ secrets: [sendgridApiKey, defaultSender], cors: true }, async (req, res) => {
-  // Allow the Admin dashboard to broadcast messages and attachments via SendGrid.
+  // Allow the Admin dashboard to broadcast messages and attachments via SendGrid (BR D.2 email requirement).
   if (req.method !== 'POST') {
     res.status(405).json({ ok: false, error: 'Method not allowed. Use POST.' })
     return

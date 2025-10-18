@@ -58,6 +58,7 @@ const options = computed(() =>
 const canvasRef = ref(null)
 const currentKey = ref(options.value[0]?.key || null)
 let ctx = null
+let dprRef = 1 // ✅ 统一缓存 DPR，避免刷新瞬间取值不一致
 
 const current = computed(() => {
   const found = options.value.find((opt) => opt.key === currentKey.value)
@@ -75,17 +76,22 @@ function selectOption(option) {
 }
 
 function drawChart() {
-  if (!ctx) return
+  if (!ctx || !canvasRef.value) return
   const { data } = current.value
+
+  // ✅ 使用 CSS 尺寸更稳：避免 DPR 抖动带来的计算偏差
+  const rect = canvasRef.value.getBoundingClientRect()
+  const width = rect.width || canvasRef.value.width / dprRef
+  const height = rect.height || canvasRef.value.height / dprRef
+
   const padding = 32
-  const labelWidth = 100 // 🧩 为左侧标签预留宽度
-  const width = ctx.canvas.width / window.devicePixelRatio
-  const height = ctx.canvas.height / window.devicePixelRatio
+  const labelWidth = 100
   ctx.clearRect(0, 0, width, height)
 
   if (!data.length) {
     ctx.fillStyle = '#adb5bd'
-    ctx.font = '14px sans-serif'
+    ctx.font =
+      '14px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif'
     ctx.fillText('No data', padding, height / 2)
     return
   }
@@ -94,7 +100,8 @@ function drawChart() {
   const barHeight = Math.min(40, (height - padding) / data.length - 16)
   const gap = 12
 
-  ctx.font = '14px sans-serif'
+  ctx.font =
+    '14px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif'
   ctx.textBaseline = 'middle'
 
   // Baseline
@@ -108,12 +115,15 @@ function drawChart() {
   data.forEach((item, index) => {
     const value = Number(item.value) || 0
     const y = padding / 2 + index * (barHeight + gap)
-    const barX = padding + labelWidth + 8 // 🧩 bar 起点向右移
-    const barWidth = ((width - padding * 2 - labelWidth - 40) * value) / maxValue
+    const barX = padding + labelWidth + 8
 
-    // 背景轨道
+    // ✅ 完全自适应的可用宽度（留 60 给右侧数字）
+    const availableWidth = Math.max(0, width - padding * 2 - labelWidth - 60)
+    const barWidth = (availableWidth * value) / maxValue
+
+    // 背景轨道（灰色）
     ctx.fillStyle = 'rgba(148, 163, 184, 0.16)'
-    drawRoundedRect(ctx, barX, y, width - barX - padding, barHeight, 6)
+    drawRoundedRect(ctx, barX, y, availableWidth, barHeight, 6)
     ctx.fill()
 
     // 实际柱状条
@@ -121,12 +131,12 @@ function drawChart() {
     drawRoundedRect(ctx, barX, y, Math.max(barWidth, 4), barHeight, 6)
     ctx.fill()
 
-    // 🧩 左侧标签在 Y 轴左侧对齐
+    // 左侧标签
     ctx.fillStyle = '#1f2933'
     ctx.textAlign = 'right'
     ctx.fillText(item.label, padding + labelWidth - 12, y + barHeight / 2)
 
-    // 数值固定在条形右端显示
+    // 数值靠右显示
     ctx.fillStyle = '#0a58ca'
     ctx.textAlign = 'left'
     const text = String(item.value)
@@ -161,14 +171,41 @@ function drawRoundedRect(ctx, x, y, width, height, radius) {
   ctx.closePath()
 }
 
+// ✅ 自动高度 + 刷新稳健（统一 DPR、避免 0 宽）
 function handleResize() {
   if (!canvasRef.value) return
+
   const rect = canvasRef.value.getBoundingClientRect()
-  canvasRef.value.width = rect.width * window.devicePixelRatio
-  canvasRef.value.height = 220 * window.devicePixelRatio
+  if (!rect.width) {
+    // 如果还没拿到布局宽度，下一帧再试（避免刷新时 0 宽导致后续计算异常）
+    requestAnimationFrame(handleResize)
+    return
+  }
+
+  dprRef = (window.devicePixelRatio && window.devicePixelRatio > 0) ? window.devicePixelRatio : 1
+
+  const rowCount = current.value.data?.length || 1
+  const baseHeight = 220
+  const perRowHeight = 60
+  const visualHeight = Math.max(baseHeight, rowCount * perRowHeight)
+
+  // 同步 CSS 尺寸，有助于确保 rect 与绘制一致
+  canvasRef.value.style.width = `${rect.width}px`
+  canvasRef.value.style.height = `${visualHeight}px`
+
+  // 设置画布像素尺寸并缩放
+  canvasRef.value.width = Math.round(rect.width * dprRef)
+  canvasRef.value.height = Math.round(visualHeight * dprRef)
+
   ctx = canvasRef.value.getContext('2d')
-  ctx.scale(window.devicePixelRatio, window.devicePixelRatio)
-  drawChart()
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
+  ctx.scale(dprRef, dprRef)
+  ctx.font =
+    '14px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif'
+  ctx.textBaseline = 'middle'
+
+  // 下一帧绘制，确保布局稳定
+  requestAnimationFrame(() => drawChart())
 }
 
 onMounted(() => {
@@ -191,7 +228,7 @@ watch(options, () => {
 })
 
 watch(current, () => {
-  drawChart()
+  handleResize()
 })
 </script>
 

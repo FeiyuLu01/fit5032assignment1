@@ -1,4 +1,4 @@
-<!-- src/views/AdminDashboard.vue -->
+<!-- Admin Dashboard (innovation requirement) providing analytics, bulk email, tables, etc. -->
 <template>
   <section class="container py-4">
     <!-- Top bar -->
@@ -74,6 +74,7 @@
         <div class="card shadow-sm h-100">
           <div class="card-header fw-semibold">Applications Overview</div>
           <div class="card-body">
+            <!-- Interactive chart fed by Firestore analytics (BR D.3 & Innovation charts) -->
             <AdminAnalyticsChart :datasets="applicationDatasets" />
           </div>
         </div>
@@ -334,7 +335,7 @@
       </div>
     </div>
 
-    <!-- Tab: Emails -->
+    <!-- Tab: Emails (Bulk email & BR D.2 attachment sending) -->
     <div v-else-if="currentTab === 'email'">
       <div class="row g-3">
         <div class="col-12 col-lg-6">
@@ -349,6 +350,7 @@
                 <button type="button" class="btn btn-sm btn-outline-secondary" @click="clearRecipients">Clear</button>
               </div>
               <div class="recipient-list">
+                <!-- Bulk email audience picker: admins can broadcast to many users at once -->
                 <div v-if="userDirectoryLoading" class="text-muted small">Loading users…</div>
                 <div v-else-if="!filteredUsers.length" class="text-muted small">No users found.</div>
                 <ul v-else class="list-unstyled mb-0">

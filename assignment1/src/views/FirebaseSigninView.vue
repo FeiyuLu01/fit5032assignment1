@@ -1,4 +1,4 @@
-<!-- src/views/FirebaseSigninView.vue -->
+<!-- Firebase Auth sign-in screen (BR D.1 external authentication) -->
 <template>
     <div class="container py-4" style="max-width:560px;">
       <h2 class="mb-3">Sign in</h2>
