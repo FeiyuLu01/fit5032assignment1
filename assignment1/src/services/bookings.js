@@ -1,3 +1,4 @@
+// Client helpers for the calendar booking features.
 import { httpsCallable, getFunctions } from 'firebase/functions'
 
 const functions = getFunctions()

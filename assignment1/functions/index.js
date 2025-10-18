@@ -44,6 +44,7 @@ async function parseMultipart(req) {
 }
 
 export const sendEmail = onRequest({ secrets: [sendgridApiKey, defaultSender], cors: true }, async (req, res) => {
+  // Allow the Admin dashboard to broadcast messages and attachments via SendGrid.
   if (req.method !== 'POST') {
     res.status(405).json({ ok: false, error: 'Method not allowed. Use POST.' })
     return
@@ -135,6 +136,7 @@ function parseBoolean(value) {
 }
 
 export const submitProgramApplication = onCall(async (request) => {
+  // Standard program applications are still stored even if the user does not use the calendar.
   const ctx = request.auth
   if (!ctx) {
     throw new HttpsError('unauthenticated', 'You must be signed in to apply.')
@@ -195,6 +197,7 @@ export const submitProgramApplication = onCall(async (request) => {
 })
 
 export const moderateProgramApplication = onCall(async (request) => {
+  // Admins can approve / reject an application; approved sessions are copied into programBookings.
   const ctx = request.auth
   if (!ctx) {
     throw new HttpsError('unauthenticated', 'You must be signed in.')
@@ -279,6 +282,7 @@ function asDate(value) {
 }
 
 export const bookProgramSlot = onCall(async (request) => {
+  // Calendar booking endpoint used by the ProgramCalendar view.
   const ctx = request.auth
   assertAuthed(ctx)
 
@@ -335,6 +339,7 @@ export const bookProgramSlot = onCall(async (request) => {
 })
 
 export const listProgramBookings = onCall(async (request) => {
+  // Provides bookings for the calendar (self scope) and analytics (admin scope).
   const ctx = request.auth
   assertAuthed(ctx)
 

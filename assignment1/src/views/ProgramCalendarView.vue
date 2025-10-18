@@ -139,6 +139,7 @@ const dialog = reactive({
   success: ''
 })
 
+// Calendar headings for the grid layout.
 const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 const monthLabel = computed(() => {
@@ -146,6 +147,8 @@ const monthLabel = computed(() => {
   return date.toLocaleString(undefined, { month: 'long', year: 'numeric' })
 })
 
+// Build the grid cells for the current month, mixing program sessions and
+// personal bookings so the user can see both availability and their own schedule.
 const calendarCells = computed(() => {
   const firstDay = new Date(currentYear.value, currentMonth.value, 1)
   const startIdx = firstDay.getDay()
@@ -182,6 +185,8 @@ const myBookings = computed(() =>
     .sort((a, b) => (safeDate(a.start)?.getTime?.() || 0) - (safeDate(b.start)?.getTime?.() || 0))
 )
 
+// Returns a Map keyed by local date (YYYY-MM-DD) containing the sessions that
+// can be booked as well as the user's own approved bookings.
 function groupEventsByDate() {
   const map = new Map()
 
@@ -228,6 +233,7 @@ function groupEventsByDate() {
   return map
 }
 
+// Normalise date-like values (plain string, Date or Firestore Timestamp).
 function safeDate(input) {
   if (!input) return null
   if (input instanceof Date) return input

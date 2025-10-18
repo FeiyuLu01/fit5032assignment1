@@ -560,6 +560,7 @@ const annLoading = ref(false)
 const annErr = ref('')
 
 // Email centre
+// Main bulk-email form (single message for multiple recipients).
 const emailForm = reactive({ from: '', to: '', subject: '', message: '' })
 const emailAttachment = ref(null)
 const emailFileInputKey = ref(0)
@@ -612,6 +613,7 @@ const applicationsLoading = computed(() => {
   const store = applicationStore[applicationFilter.value]
   return store?.loading || false
 })
+// Prepare datasets for the interactive chart component on the Applications tab.
 const applicationDatasets = computed(() => {
   const statusData = [
     { key: 'pending', label: 'Pending', value: applicationStore.pending.items.length, color: '#ffc107' },
@@ -773,6 +775,7 @@ async function submitEmail(event) {
   }
 }
 
+// Refresh helper for analytics + table data; invoked on tab switch and moderation.
 async function refreshApplications(force = false) {
   if (!force && allApplications.value.length > 0) return
   Object.values(applicationStore).forEach((store) => {
@@ -1045,6 +1048,7 @@ async function loadUsers() {
   }
 }
 
+// Used by the admin analytics chart to display booking activity per month.
 async function loadBookingsOverview() {
   try {
     const { bookings: list } = await listProgramBookings({ scope: 'all' })

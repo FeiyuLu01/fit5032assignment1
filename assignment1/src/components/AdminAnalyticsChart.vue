@@ -78,8 +78,9 @@ function drawChart() {
   if (!ctx) return
   const { data } = current.value
   const padding = 32
-  const width = ctx.canvas.width
-  const height = ctx.canvas.height
+  const labelWidth = 100 // 🧩 为左侧标签预留宽度
+  const width = ctx.canvas.width / window.devicePixelRatio
+  const height = ctx.canvas.height / window.devicePixelRatio
   ctx.clearRect(0, 0, width, height)
 
   if (!data.length) {
@@ -90,28 +91,47 @@ function drawChart() {
   }
 
   const maxValue = Math.max(...data.map((item) => Number(item.value) || 0), 1)
-  const barHeight = Math.min(48, (height - padding) / data.length - 12)
+  const barHeight = Math.min(40, (height - padding) / data.length - 16)
   const gap = 12
 
   ctx.font = '14px sans-serif'
   ctx.textBaseline = 'middle'
 
+  // Baseline
+  ctx.strokeStyle = 'rgba(15, 23, 42, 0.12)'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(padding + labelWidth, padding / 2)
+  ctx.lineTo(padding + labelWidth, height - padding / 2)
+  ctx.stroke()
+
   data.forEach((item, index) => {
     const value = Number(item.value) || 0
     const y = padding / 2 + index * (barHeight + gap)
-    const barWidth = ((width - padding * 2) * value) / maxValue
+    const barX = padding + labelWidth + 8 // 🧩 bar 起点向右移
+    const barWidth = ((width - padding * 2 - labelWidth - 40) * value) / maxValue
 
-    ctx.fillStyle = item.color || defaultColor(index)
-    drawRoundedRect(ctx, padding, y, Math.max(barWidth, 4), barHeight, 6)
+    // 背景轨道
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.16)'
+    drawRoundedRect(ctx, barX, y, width - barX - padding, barHeight, 6)
     ctx.fill()
 
-    ctx.fillStyle = '#1f2933'
-    ctx.fillText(item.label, padding + 8, y + barHeight / 2)
+    // 实际柱状条
+    ctx.fillStyle = item.color || defaultColor(index)
+    drawRoundedRect(ctx, barX, y, Math.max(barWidth, 4), barHeight, 6)
+    ctx.fill()
 
+    // 🧩 左侧标签在 Y 轴左侧对齐
+    ctx.fillStyle = '#1f2933'
+    ctx.textAlign = 'right'
+    ctx.fillText(item.label, padding + labelWidth - 12, y + barHeight / 2)
+
+    // 数值固定在条形右端显示
     ctx.fillStyle = '#0a58ca'
+    ctx.textAlign = 'left'
     const text = String(item.value)
     const textWidth = ctx.measureText(text).width
-    const textX = barWidth > textWidth + 24 ? padding + barWidth - textWidth - 8 : padding + barWidth + 8
+    const textX = Math.min(width - textWidth - 16, barX + barWidth + 8)
     ctx.fillText(text, textX, y + barHeight / 2)
   })
 }
