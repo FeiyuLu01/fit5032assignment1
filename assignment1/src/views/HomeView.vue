@@ -109,8 +109,11 @@
             </div>
 
             <div class="col-12 d-flex gap-2">
-              <button class="btn btn-primary" type="submit">Submit Application</button>
-              <button class="btn btn-outline-secondary" type="button" @click="cancelApply">Cancel</button>
+              <button class="btn btn-primary" type="submit" :disabled="submitting">
+                <span v-if="submitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Submit Application
+              </button>
+              <button class="btn btn-outline-secondary" type="button" @click="cancelApply" :disabled="submitting">Cancel</button>
             </div>
           </form>
         </div>
@@ -119,17 +122,25 @@
 
     <!-- Recent applications -->
     <div class="mt-5">
-      <div class="section-head mb-3">
-        <h4 class="fw-bold text-primary">Recent Applications</h4>
+      <div class="section-head mb-3 d-flex justify-content-between align-items-center">
+        <h4 class="fw-bold text-primary mb-0">Recent Applications</h4>
+        <span v-if="loadingApplications" class="text-muted small">Loading…</span>
       </div>
 
-      <div v-if="registrations.length === 0" class="text-muted">No submissions yet.</div>
+      <div v-if="!loadingApplications && registrations.length === 0" class="text-muted">No submissions yet.</div>
       <div v-else class="card shadow-sm border-0 rounded-3">
         <div class="table-responsive">
           <table class="table align-middle mb-0">
             <thead class="table-light">
               <tr>
-                <th>Program</th><th>Name</th><th>Email</th><th>Phone</th><th>Age</th><th>Date</th><th>Submitted</th>
+                <th scope="col">Program</th>
+                <th scope="col">Name</th>
+                <th scope="col">Email</th>
+                <th scope="col">Phone</th>
+                <th scope="col">Age</th>
+                <th scope="col">Date</th>
+                <th scope="col">Submitted</th>
+                <th scope="col">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -141,6 +152,12 @@
                 <td>{{ r.form.age }}</td>
                 <td>{{ formatDateISOToDMY(r.form.prefDate) }}</td>
                 <td>{{ formatDateTimeDMY(r.ts) }}</td>
+                <td>
+                  <span :class="statusClass(r.status)">
+                    {{ statusLabel(r.status) }}
+                  </span>
+                  <div v-if="r.decisionNote" class="small text-muted">{{ r.decisionNote }}</div>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -152,12 +169,14 @@
 
 <script setup>
 /* Data & components */
-import { onMounted, onBeforeUnmount, reactive, ref } from 'vue'
+import { onMounted, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import ProgramCard from '@/components/ProgramCard.vue'
 import SafeHtmlBlock from '@/components/SafeHtmlBlock.vue'
 import { fetchPrograms } from '@/services/data.js'
 import { listenAnnouncements, fetchAnnouncementsOnce } from '@/services/announcements.js'
 import { formatDateISOToDMY, formatDateTimeDMY, maskEmail, maskPhone } from '@/utils/format.js'
+import { applyForProgram, fetchMyApplications } from '@/services/applications.js'
+import { useAuthState } from '@/state/authState'
 
 /* Announcements state */
 const announcements = ref([])
@@ -167,11 +186,13 @@ let unlisten = null
 const programs = ref([])
 const selected = ref(null)
 const registrations = ref([])
+const { state: authState } = useAuthState()
 
 /* Mount: load programs & announcements */
 onMounted(async () => {
-  programs.value = await fetchPrograms()
-  registrations.value = JSON.parse(localStorage.getItem('registrations') || '[]')
+  const fetchedPrograms = await fetchPrograms()
+  programs.value = Array.isArray(fetchedPrograms) ? fetchedPrograms.slice(0, 6) : []
+  await loadApplications()
 
   try {
     unlisten = listenAnnouncements(list => {
@@ -189,6 +210,13 @@ onMounted(async () => {
 
 onBeforeUnmount(() => { if (typeof unlisten === 'function') unlisten() })
 
+watch(
+  () => authState.user?.uid,
+  async () => {
+    await loadApplications()
+  }
+)
+
 /* Application logic (kept as original) */
 function openApply(p) { selected.value = p }
 function cancelApply() { selected.value = null; resetForm() }
@@ -198,6 +226,38 @@ const form = reactive({
   notifyParent: false, emergencyPhone: ''
 })
 const errors = reactive({ name: '', email: '', emergencyPhone: '' })
+const loadingApplications = ref(false)
+const submitting = ref(false)
+
+async function loadApplications() {
+  const uid = authState.user?.uid
+  if (!uid) {
+    registrations.value = []
+    return
+  }
+  loadingApplications.value = true
+  try {
+    const list = await fetchMyApplications(uid)
+    registrations.value = list.map((item) => ({
+      id: item.id,
+      program: { id: item.programId, title: item.programTitle },
+      form: {
+        name: item.applicantName,
+        email: item.applicantEmail,
+        emergencyPhone: item.emergencyPhone,
+        age: item.age,
+        prefDate: item.prefDate
+      },
+      status: item.status,
+      decisionNote: item.decisionNote,
+      ts: item.submittedAt ? item.submittedAt.getTime() : Date.now()
+    }))
+  } catch (err) {
+    console.error('Failed to load applications', err)
+  } finally {
+    loadingApplications.value = false
+  }
+}
 
 function validateName () {
   errors.name = form.name.length >= 2 ? '' : 'Name must be at least 2 characters.'
@@ -223,15 +283,27 @@ function resetForm () {
   form.notifyParent=false; form.emergencyPhone=''
   errors.name=errors.email=errors.emergencyPhone=''
 }
-function submitForm () {
+async function submitForm () {
   if (!allValid()) return
-  const reg = { program: selected.value, form: { ...form }, ts: Date.now() }
-  const list = JSON.parse(localStorage.getItem('registrations') || '[]')
-  list.unshift(reg)
-  localStorage.setItem('registrations', JSON.stringify(list))
-  registrations.value = list
-  cancelApply()
-  alert('Application submitted!')
+  if (!authState.user) {
+    alert('Please sign in before submitting an application.')
+    return
+  }
+
+  submitting.value = true
+  try {
+    await applyForProgram(selected.value.id, {
+      ...form
+    })
+    alert('Application submitted successfully!')
+    await loadApplications()
+    cancelApply()
+  } catch (err) {
+    console.error('submitForm failed', err)
+    alert(err?.message || 'Failed to submit application. Please try again.')
+  } finally {
+    submitting.value = false
+  }
 }
 
 /* Helpers */
@@ -249,6 +321,19 @@ function isRecent (ts) {
     const dt = ts?.toDate ? ts.toDate() : new Date(ts)
     return Date.now() - dt.getTime() < 1000 * 60 * 60 * 48
   } catch { return false }
+}
+
+function statusClass(value) {
+  const status = (value || '').toLowerCase()
+  if (status === 'approved') return 'badge text-bg-success text-uppercase'
+  if (status === 'rejected') return 'badge text-bg-danger text-uppercase'
+  return 'badge text-bg-warning text-uppercase'
+}
+
+function statusLabel(value) {
+  const status = (value || '').toLowerCase()
+  if (!status) return 'Pending'
+  return status.charAt(0).toUpperCase() + status.slice(1)
 }
 </script>
 

@@ -1,0 +1,159 @@
+[
+  {
+    "place_id": "ChIJvf2mwE0R1moROgNCwJSC4K8",
+    "name": "Hoops247 Indoor Sports Centre",
+    "address": "41 Princes Hwy, Dandenong South VIC 3175",
+    "lat": -38.0026964,
+    "lng": 145.2387497,
+    "rating": 4.3,
+    "user_ratings_total": 166,
+    "types": [
+      "point_of_interest",
+      "establishment"
+    ]
+  },
+  {
+    "place_id": "ChIJwXxVRstC1moRct4R6zJu3E8",
+    "name": "RMIT A'Beckett Urban Square",
+    "address": "A’Beckett St and, Stewart St, Melbourne VIC 3000",
+    "lat": -37.8086481,
+    "lng": 144.9621054,
+    "rating": 4.3,
+    "user_ratings_total": 106,
+    "types": [
+      "point_of_interest",
+      "establishment"
+    ]
+  },
+  {
+    "place_id": "ChIJ9ZRi2CIT1moRwacwh5qSpKg",
+    "name": "Dandenong Park Basketball Court",
+    "address": "59 Pultney St, Dandenong VIC 3175",
+    "lat": -37.9924792,
+    "lng": 145.2177036,
+    "rating": 4.4,
+    "user_ratings_total": 5,
+    "types": [
+      "point_of_interest",
+      "establishment"
+    ]
+  },
+  {
+    "place_id": "ChIJzYdfR4IW1moRZWEBxO8UpIA",
+    "name": "Dandenong Basketball",
+    "address": "270 Stud Rd, Dandenong North VIC 3175",
+    "lat": -37.963932,
+    "lng": 145.2263521,
+    "rating": 4,
+    "user_ratings_total": 278,
+    "types": [
+      "point_of_interest",
+      "establishment"
+    ]
+  },
+  {
+    "place_id": "ChIJS9E0KWU-1moRuhr_WzaoDGM",
+    "name": "State Basketball Centre",
+    "address": "291 George St, Wantirna South VIC 3152",
+    "lat": -37.88016229999999,
+    "lng": 145.2123132,
+    "rating": 4.4,
+    "user_ratings_total": 846,
+    "types": [
+      "stadium",
+      "point_of_interest",
+      "establishment"
+    ]
+  },
+  {
+    "place_id": "ChIJhZEMKAAV1moRhTYytPX9oWE",
+    "name": "Springvale Community Hub Park Basketball Court",
+    "address": "407 Springvale Rd, Springvale VIC 3171",
+    "lat": -37.9568594,
+    "lng": 145.1516354,
+    "rating": 5,
+    "user_ratings_total": 2,
+    "types": [
+      "point_of_interest",
+      "establishment"
+    ]
+  },
+  {
+    "place_id": "ChIJB48GS1pd1moR3rOogLi_R40",
+    "name": "Docklands Sports Courts",
+    "address": "Hub at Docklands, 68-90 Harbour Esplanade, Docklands VIC 3008",
+    "lat": -37.820002,
+    "lng": 144.9475981,
+    "rating": 4.3,
+    "user_ratings_total": 152,
+    "types": [
+      "point_of_interest",
+      "establishment"
+    ]
+  },
+  {
+    "place_id": "ChIJsQj7UgAT1moRBTSyLoGiOTA",
+    "name": "Pirate Park Basketball Court",
+    "address": "Pirate Playground, 39 Somerfield Dr N, Keysborough VIC 3173",
+    "lat": -38.0068489,
+    "lng": 145.1768066,
+    "rating": null,
+    "user_ratings_total": 0,
+    "types": [
+      "point_of_interest",
+      "establishment"
+    ]
+  },
+  {
+    "place_id": "ChIJkzoSVK5n1moRf-CDGYkH7Z4",
+    "name": "Hoop City - Port Melbourne",
+    "address": "522 Graham St, Port Melbourne VIC 3207",
+    "lat": -37.8297228,
+    "lng": 144.9325644,
+    "rating": 5,
+    "user_ratings_total": 9,
+    "types": [
+      "point_of_interest",
+      "establishment"
+    ]
+  },
+  {
+    "place_id": "ChIJp5GUNOYX1moRhv0vAYO1gmc",
+    "name": "Essex Park Half Basketball Court",
+    "address": "Endeavour Hills VIC 3802",
+    "lat": -37.9669273,
+    "lng": 145.2372995,
+    "rating": 1,
+    "user_ratings_total": 1,
+    "types": [
+      "point_of_interest",
+      "establishment"
+    ]
+  },
+  {
+    "place_id": "ChIJlSxLxcFv1moRwQ-w1RXZ0hA",
+    "name": "Hoop City - Cheltenham",
+    "address": "77-79 Tulip St, Cheltenham VIC 3192",
+    "lat": -37.9628583,
+    "lng": 145.0304884,
+    "rating": 4.9,
+    "user_ratings_total": 46,
+    "types": [
+      "point_of_interest",
+      "establishment"
+    ]
+  },
+  {
+    "place_id": "ChIJDfaTEQAV1moRSgPOA07COec",
+    "name": "George Street Multi-Use Court",
+    "address": "4 George St, Dandenong VIC 3175",
+    "lat": -37.9882377,
+    "lng": 145.2099884,
+    "rating": null,
+    "user_ratings_total": 0,
+    "types": [
+      "point_of_interest",
+      "establishment"
+    ]
+  }
+]

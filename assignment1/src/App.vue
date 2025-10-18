@@ -25,6 +25,12 @@
               <li class="nav-item">
                 <router-link class="nav-link" to="/courts">Court Finder</router-link>
               </li>
+              <li class="nav-item">
+                <router-link class="nav-link" to="/data">Data Explorer</router-link>
+              </li>
+              <li class="nav-item">
+                <router-link class="nav-link" to="/calendar">Calendar</router-link>
+              </li>
             </template>
             <template v-else>
               <li class="nav-item">

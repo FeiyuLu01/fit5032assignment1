@@ -61,26 +61,37 @@ export async function listApprovedCourts({ pageSize = 20, last } = {}) {
     return listCourtsByStatus('rejected', opts)
   }
   
-  export async function createCourt(data) {
-    const keywords = (data.name + ' ' + data.address + ' ' + (data.tags || []).join(' '))
-      .toLowerCase()
-      .split(/\s+/)
-      .filter(Boolean)
-  
-    const payload = {
-      name: data.name,
-      address: data.address,
-      hoops: Number(data.hoops) || 0,
-      lighting: !!data.lighting,
-      tags: data.tags || [],
-      keywords,
-      status: 'approved',
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      authorId: getAuth().currentUser?.uid || null
-    }
-    return await addDoc(colCourts, payload)
+export async function createCourt(data) {
+  const keywords = (
+    data.name + ' ' + data.address + ' ' + (data.suburb || '') + ' ' + (data.tags || []).join(' ')
+  )
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+
+  const lightsValue = typeof data.lights === 'boolean' ? data.lights : !!data.lighting
+  const payload = {
+    name: data.name,
+    address: data.address,
+    suburb: data.suburb || '',
+    hoops: Number(data.hoops) || 0,
+    lighting: lightsValue,
+    lights: lightsValue,
+    indoor: !!data.indoor,
+    cost: data.cost || '',
+    hours: data.hours || '',
+    surfaces: data.surfaces || [],
+    lat: typeof data.lat === 'number' ? data.lat : null,
+    lng: typeof data.lng === 'number' ? data.lng : null,
+    tags: data.tags || [],
+    keywords,
+    status: 'approved',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    authorId: getAuth().currentUser?.uid || null
   }
+  return await addDoc(colCourts, payload)
+}
   
   export async function updateCourt(id, patch) {
     return updateDoc(doc(colCourts, id), { ...patch, updatedAt: serverTimestamp() })

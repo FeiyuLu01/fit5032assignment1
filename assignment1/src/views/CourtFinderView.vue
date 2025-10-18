@@ -33,6 +33,46 @@
       </div>
     </div>
 
+    <!-- Map with advanced features -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body">
+        <div class="row g-3 align-items-start">
+          <div class="col-12 col-lg-4">
+            <label class="form-label fw-semibold" for="mapSearch">Plan a route</label>
+            <input
+              id="mapSearch"
+              ref="searchInputEl"
+              type="text"
+              class="form-control"
+              placeholder="Search a starting location"
+              :disabled="!mapReady"
+            />
+            <div class="form-text">Type an address or place name and pick from the suggestions.</div>
+            <div class="mt-3">
+              <div class="fw-semibold">Route controls</div>
+              <p class="small text-muted mb-2">
+                Select a court from the list or map markers to preview directions. You can clear the current route at any time.
+              </p>
+              <button class="btn btn-outline-secondary btn-sm" type="button" @click="clearRoute" :disabled="!routeActive">
+                Clear Route
+              </button>
+            </div>
+            <div v-if="mapStatus" class="alert alert-warning mt-3" role="status">{{ mapStatus }}</div>
+            <div v-if="selectedCourt" class="mt-3">
+              <div class="fw-semibold">Selected court</div>
+              <p class="small mb-1">{{ selectedCourt.name }}<br><span class="text-muted">{{ selectedCourt.address || selectedCourt.suburb }}</span></p>
+              <button class="btn btn-sm btn-primary" type="button" @click="routeToCourt(selectedCourt)" :disabled="!originPoint">
+                Show directions
+              </button>
+            </div>
+          </div>
+          <div class="col-12 col-lg-8">
+            <div ref="mapRef" class="court-map" role="img" aria-label="Map showing basketball courts"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Results grid -->
     <div class="row g-3">
       <div v-for="c in courts" :key="c.id" class="col-12 col-md-6 col-xl-4">
@@ -58,6 +98,14 @@
             <div class="mt-auto">
               <router-link :to="{ name: 'courtDetails', params: { id: c.id } }"
                            class="btn btn-outline-primary btn-sm">Details</router-link>
+              <button
+                class="btn btn-link btn-sm"
+                type="button"
+                @click="focusOnCourt(c)"
+                :disabled="!mapReady"
+              >
+                View on map
+              </button>
             </div>
           </div>
         </div>
@@ -75,7 +123,7 @@
 
 <script setup>
 // UI-only polish; search/reset logic is restored to actually filter results.
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { fetchCourts } from '../services/data.js'
 import { useAppState } from '../state/appState.js'
 
@@ -90,11 +138,44 @@ const suburb = ref('')
 const radius = ref(null)    // in km
 const indoorOnly = ref(false)
 
+// Map state
+const mapRef = ref(null)
+const searchInputEl = ref(null)
+const mapReady = ref(false)
+const mapStatus = ref('')
+const originPoint = ref(null)
+const selectedCourt = ref(null)
+const routeActive = ref(false)
+
+let googleModule = null
+let mapInstance = null
+let directionsService = null
+let directionsRenderer = null
+let autocomplete = null
+let infoWindow = null
+let originMarker = null
+const markers = []
+
+const googleApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''
+let googleLoaderPromise = null
+
 // Load initial data once
 onMounted(async () => {
   const list = await fetchCourts()
   allCourts.value = Array.isArray(list) ? list : []
   courts.value = allCourts.value
+  await initMap()
+})
+
+onBeforeUnmount(() => {
+  markers.forEach(marker => marker.setMap(null))
+  markers.length = 0
+  if (originMarker) originMarker.setMap(null)
+  if (directionsRenderer) directionsRenderer.setMap(null)
+})
+
+watch(courts, () => {
+  renderMarkers()
 })
 
 /**
@@ -166,6 +247,186 @@ function isFaved(id) {
 function toggleFav(id) {
   app.toggleFave(id)
 }
+async function initMap() {
+  if (!googleApiKey) {
+    mapStatus.value = 'Google Maps API key is not configured. Map features are unavailable.'
+    return
+  }
+  if (!mapRef.value) return
+  try {
+    googleModule = await loadGoogleMapsScript()
+    if (!googleModule) {
+      mapStatus.value = 'Unable to load Google Maps. Check API configuration.'
+      return
+    }
+    const { maps } = googleModule
+    mapInstance = new maps.Map(mapRef.value, {
+      center: { lat: -37.8136, lng: 144.9631 },
+      zoom: 12,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: true
+    })
+    directionsService = new maps.DirectionsService()
+    directionsRenderer = new maps.DirectionsRenderer({ map: mapInstance, suppressMarkers: false })
+    infoWindow = new maps.InfoWindow()
+    mapReady.value = true
+    initAutocomplete()
+    renderMarkers()
+  } catch (err) {
+    console.error('initMap failed', err)
+    mapStatus.value = 'Unable to load Google Maps. Check API configuration.'
+  }
+}
+
+function loadGoogleMapsScript() {
+  if (typeof window === 'undefined') return Promise.resolve(null)
+  if (window.google && window.google.maps) {
+    return Promise.resolve(window.google)
+  }
+  if (!googleLoaderPromise) {
+    googleLoaderPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      const params = new URLSearchParams({
+        key: googleApiKey,
+        libraries: 'places'
+      })
+      script.src = `https://maps.googleapis.com/maps/api/js?${params.toString()}`
+      script.async = true
+      script.defer = true
+      script.onload = () => resolve(window.google)
+      script.onerror = (err) => reject(err)
+      document.head.appendChild(script)
+    })
+  }
+  return googleLoaderPromise
+}
+
+function initAutocomplete() {
+  if (!googleModule || !searchInputEl.value) return
+  const { maps } = googleModule
+  autocomplete = new maps.places.Autocomplete(searchInputEl.value, {
+    fields: ['geometry', 'formatted_address', 'name']
+  })
+  autocomplete.addListener('place_changed', () => {
+    const place = autocomplete.getPlace()
+    if (!place || !place.geometry || !place.geometry.location) {
+      mapStatus.value = 'Could not determine that location. Try another search.'
+      return
+    }
+    const position = {
+      lat: place.geometry.location.lat(),
+      lng: place.geometry.location.lng()
+    }
+    originPoint.value = {
+      ...position,
+      label: place.formatted_address || place.name || ''
+    }
+    app.userLocation = position
+    if (!originMarker) {
+      originMarker = new maps.Marker({
+        map: mapInstance,
+        title: 'Starting location',
+        icon: {
+          path: maps.SymbolPath.CIRCLE,
+          scale: 7,
+          fillColor: '#0d6efd',
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 2
+        }
+      })
+    }
+    originMarker.setPosition(position)
+    mapInstance.panTo(position)
+    mapStatus.value = 'Starting point set. Select a court to view directions.'
+    routeActive.value = false
+    if (directionsRenderer) {
+      directionsRenderer.set('directions', null)
+    }
+  })
+}
+
+function renderMarkers() {
+  if (!mapReady.value || !googleModule || !mapInstance) return
+  markers.forEach(marker => marker.setMap(null))
+  markers.length = 0
+  const { maps } = googleModule
+  courts.value.forEach((court) => {
+    if (typeof court.lat !== 'number' || typeof court.lng !== 'number') return
+    const marker = new maps.Marker({
+      map: mapInstance,
+      position: { lat: court.lat, lng: court.lng },
+      title: court.name
+    })
+    marker.addListener('click', () => {
+      focusOnCourt(court)
+    })
+    markers.push(marker)
+  })
+}
+
+function focusOnCourt(court) {
+  if (!mapReady.value || !mapInstance) return
+  if (typeof court.lat !== 'number' || typeof court.lng !== 'number') {
+    mapStatus.value = 'Location details for this court are not available yet.'
+    return
+  }
+  selectedCourt.value = court
+  mapInstance.panTo({ lat: court.lat, lng: court.lng })
+  mapInstance.setZoom(14)
+  if (infoWindow) {
+    infoWindow.setContent(`<div><strong>${court.name}</strong><br/>${court.address || court.suburb || ''}</div>`)
+    infoWindow.setPosition({ lat: court.lat, lng: court.lng })
+    infoWindow.open({ map: mapInstance })
+  }
+  if (!originPoint.value) {
+    mapStatus.value = 'Select a starting location to plan a route.'
+  } else {
+    mapStatus.value = 'Click "Show directions" to generate the route.'
+  }
+}
+
+async function routeToCourt(court) {
+  if (!originPoint.value) {
+    mapStatus.value = 'Please search for a starting location before generating a route.'
+    return
+  }
+  if (!mapReady.value || !directionsService || !directionsRenderer) return
+  if (typeof court.lat !== 'number' || typeof court.lng !== 'number') {
+    mapStatus.value = 'Selected court does not have map coordinates.'
+    return
+  }
+  try {
+    const origin = { lat: originPoint.value.lat, lng: originPoint.value.lng }
+    const destination = { lat: court.lat, lng: court.lng }
+    const result = await directionsService.route({
+      origin,
+      destination,
+      travelMode: googleModule.maps.TravelMode.DRIVING
+    })
+    directionsRenderer.setDirections(result)
+    routeActive.value = true
+    const leg = result.routes?.[0]?.legs?.[0]
+    if (leg?.distance && leg?.duration) {
+      mapStatus.value = `Route ready: ${leg.distance.text}, approx. ${leg.duration.text}.`
+    } else {
+      mapStatus.value = 'Route ready.'
+    }
+  } catch (err) {
+    console.error('routeToCourt failed', err)
+    mapStatus.value = 'Unable to calculate route for this court.'
+  }
+}
+
+function clearRoute() {
+  if (directionsRenderer) {
+    directionsRenderer.set('directions', null)
+  }
+  routeActive.value = false
+  mapStatus.value = ''
+}
+
 </script>
 
 <style scoped>
@@ -185,5 +446,12 @@ function toggleFav(id) {
   font-size: 1.1rem;
   line-height: 1;
   padding: 0.25rem 0.5rem;
+}
+
+.court-map {
+  width: 100%;
+  min-height: 320px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.1);
 }
 </style>

@@ -3,6 +3,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import CourtFinderView from '../views/CourtFinderView.vue'
 import CourtDetailsView from '../views/CourtDetailsView.vue'
+import DataExplorerView from '../views/DataExplorerView.vue'
+import ProgramCalendarView from '../views/ProgramCalendarView.vue'
 
 import FirebaseSigninView from '../views/FirebaseSigninView.vue'
 import FirebaseRegisterView from '../views/FirebaseRegisterView.vue'
@@ -16,6 +18,8 @@ const routes = [
   { path: '/', name: 'home', component: HomeView, meta: { requiresAuth: true } },
   { path: '/courts', name: 'courts', component: CourtFinderView, meta: { requiresAuth: true } },
   { path: '/courts/:id', name: 'courtDetails', component: CourtDetailsView, props: true, meta: { requiresAuth: true } },
+  { path: '/data', name: 'dataExplorer', component: DataExplorerView, meta: { requiresAuth: true } },
+  { path: '/calendar', name: 'calendar', component: ProgramCalendarView, meta: { requiresAuth: true } },
 
   // auth
   { path: '/login', name: 'login', component: FirebaseSigninView },
@@ -24,6 +28,8 @@ const routes = [
   // admin (single component with tabs)
   { path: '/admin',               name: 'admin',              component: AdminView, meta: { requiresAuth: true, roles: ['admin'], tab: 'courts' } },
   { path: '/admin/create',        name: 'adminCreateCourt',   component: AdminView, meta: { requiresAuth: true, roles: ['admin'], tab: 'create' } },
+  { path: '/admin/applications',  name: 'adminApplications',  component: AdminView, meta: { requiresAuth: true, roles: ['admin'], tab: 'applications' } },
+  { path: '/admin/emails',        name: 'adminEmails',        component: AdminView, meta: { requiresAuth: true, roles: ['admin'], tab: 'email' } },
   { path: '/admin/announcements', name: 'adminAnnouncements', component: AdminView, meta: { requiresAuth: true, roles: ['admin'], tab: 'announcements' } },
 
   // optional 404 fallback
@@ -69,7 +75,7 @@ router.beforeEach(async (to, from, next) => {
   }
 
   // admin visiting user front pages -> redirect to dashboard
-  if (isAdmin && (to.name === 'home' || to.name === 'courts' || to.name === 'courtDetails')) {
+  if (isAdmin && (to.name === 'home' || to.name === 'courts' || to.name === 'courtDetails' || to.name === 'dataExplorer' || to.name === 'calendar')) {
     return next({ name: 'admin' })
   }
 
